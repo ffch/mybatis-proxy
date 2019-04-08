@@ -22,6 +22,8 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
+import cn.pomit.mybatis.transaction.TransactionHolder;
+
 public class SqlSessionTemplate implements SqlSession {
 	private static final Log LOGGER = LogFactory.getLog(SqlSessionTemplate.class);
 	private final SqlSessionFactory sqlSessionFactory;
@@ -319,29 +321,27 @@ public class SqlSessionTemplate implements SqlSession {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			LOGGER.debug("Creating a new SqlSession");
-			SqlSession sqlSession = getSqlSession(SqlSessionTemplate.this.sqlSessionFactory,
+			TransactionHolder transactionHolder = getSqlSession(SqlSessionTemplate.this.sqlSessionFactory,
 					SqlSessionTemplate.this.executorType);
+			SqlSession sqlSession = transactionHolder.getSession();
 			try {
 				Object result = method.invoke(sqlSession, args);
-				// if (!isSqlSessionTransactional(sqlSession,
-				// SqlSessionTemplate.this.sqlSessionFactory)) {
-				// // force commit even on non-dirty sessions because some
-				// // databases require
-				// // a commit/rollback before calling close()
-				// sqlSession.commit(true);
-				// }
-				sqlSession.commit(true);
-				LOGGER.debug("Commit a SqlSession");
+				if (!transactionHolder.isHasTransaction()) {
+					sqlSession.commit(true);
+					LOGGER.debug("Commit a SqlSession");
+				}
 				return result;
 			} catch (Throwable t) {
 				Throwable unwrapped = unwrapThrowable(t);
-				closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
-				LOGGER.debug("Close a SqlSession");
+				if (!transactionHolder.isHasTransaction()){
+					closeSqlSession(transactionHolder, SqlSessionTemplate.this.sqlSessionFactory);
+					LOGGER.debug("exception! Closing the SqlSession");
+				}
 				throw unwrapped;
 			} finally {
-				if (sqlSession != null) {
-					closeSqlSession(sqlSession, SqlSessionTemplate.this.sqlSessionFactory);
-					LOGGER.debug("Close a SqlSession");
+				if (!transactionHolder.isHasTransaction() && sqlSession != null) {
+					closeSqlSession(transactionHolder, SqlSessionTemplate.this.sqlSessionFactory);
+					LOGGER.debug("Close the SqlSession");
 				}
 			}
 		}

@@ -4,35 +4,46 @@ import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
+import cn.pomit.mybatis.transaction.TransactionHolder;
+import cn.pomit.mybatis.transaction.TransactionManager;
+
 public class SqlSessionUtils {
 
-	public static SqlSession getSqlSession(SqlSessionFactory sessionFactory) {
+	public static TransactionHolder getSqlSession(SqlSessionFactory sessionFactory) {
 		ExecutorType executorType = sessionFactory.getConfiguration().getDefaultExecutorType();
 		return getSqlSession(sessionFactory, executorType);
 	}
 
-	public static SqlSession getSqlSession(SqlSessionFactory sessionFactory, ExecutorType executorType) {
-		// SqlSessionHolder holder = (SqlSessionHolder)
-		// TransactionSynchronizationManager.getResource(sessionFactory);
-		//
-		// SqlSession session = sessionHolder(executorType, holder);
-		// if (session != null) {
-		// return session;
-		// }
-		//
-		// if (LOGGER.isDebugEnabled()) {
-		// LOGGER.debug("Creating a new SqlSession");
-		// }
+	public static TransactionHolder getSqlSession(SqlSessionFactory sessionFactory, ExecutorType executorType) {
+		TransactionHolder transactionHolder = (TransactionHolder) TransactionManager.getResource(sessionFactory);
 
-		SqlSession session = sessionFactory.openSession(executorType);
-
-		// registerSessionHolder(sessionFactory, executorType,
-		// exceptionTranslator, session);
-
-		return session;
+		if (transactionHolder == null) {
+			transactionHolder = new TransactionHolder(sessionFactory.openSession(executorType), false);
+			return transactionHolder;
+		}
+		if (transactionHolder.getSession() == null) {
+			transactionHolder.setSession(sessionFactory.openSession(executorType));
+			transactionHolder.setHasTransaction(false);
+		}
+		return transactionHolder;
 	}
 
-	public static void closeSqlSession(SqlSession session, SqlSessionFactory sessionFactory) {
-		session.close();
+	public static TransactionHolder registerSqlSession(SqlSessionFactory sessionFactory, ExecutorType executorType) {
+		TransactionHolder transactionHolder = new TransactionHolder(sessionFactory.openSession(executorType), true);
+		TransactionManager.bindResource(sessionFactory, transactionHolder);
+		return transactionHolder;
+	}
+
+	public static void closeSqlSession(TransactionHolder transactionHolder, SqlSessionFactory sessionFactory) {
+		SqlSession session = transactionHolder.getSession();
+		if(session != null){
+			session.close();
+			session = null;
+		}
+
+		if (transactionHolder.isHasTransaction()) {
+			TransactionManager.unbindResource(sessionFactory);
+		}
+
 	}
 }
