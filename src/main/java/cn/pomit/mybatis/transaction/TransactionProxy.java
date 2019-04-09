@@ -41,21 +41,20 @@ public class TransactionProxy implements InvocationHandler {
 			LOGGER.debug("no 事务");
 			return method.invoke(targert, args);
 		} else {
-			TransactionHolder transactionHolder = SqlSessionUtils.registerSqlSession(
+			AbstractTransactionHolder transactionHolder = SqlSessionUtils.registerTransaction(
 					sqlSessionTemplate.getSqlSessionFactory(), sqlSessionTemplate.getExecutorType());
 			LOGGER.debug("事务注册成功");
 			try {
 				Object result = method.invoke(targert, args);
-				if (transactionHolder.isHasTransaction()) {	
-					transactionHolder.getSession().commit(true);
-					LOGGER.debug("事务提交成功");
-				}
+				transactionHolder.commitTransaction();
 				return result;
 			} catch (Exception e) {
 				Throwable unwrap = ExceptionUtil.unwrapThrowable(e);
+				boolean isCommit = true;
 				if (exceptions == null || exceptions.length < 1) {
 					if (unwrap instanceof RuntimeException) {
-						transactionHolder.getSession().rollback(true);
+						transactionHolder.rollbackTransaction();
+						isCommit = false;
 					}
 				} else {
 					boolean catchExcep = false;
@@ -66,13 +65,16 @@ public class TransactionProxy implements InvocationHandler {
 						}
 					}
 					if (catchExcep) {
-						transactionHolder.getSession().rollback(true);
+						isCommit = false;
+						transactionHolder.rollbackTransaction();
 					}
+				}
+				if (isCommit) {
+					transactionHolder.commitTransaction();
 				}
 				throw unwrap;
 			} finally {
-				LOGGER.debug("关闭session");
-				SqlSessionUtils.closeSqlSession(transactionHolder, sqlSessionTemplate.getSqlSessionFactory());
+				SqlSessionUtils.deRegisterTransaction(transactionHolder, sqlSessionTemplate.getSqlSessionFactory());
 			}
 
 		}

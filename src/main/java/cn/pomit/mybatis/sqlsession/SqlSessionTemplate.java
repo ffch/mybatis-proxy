@@ -1,7 +1,6 @@
 package cn.pomit.mybatis.sqlsession;
 
-import static cn.pomit.mybatis.sqlsession.SqlSessionUtils.closeSqlSession;
-import static cn.pomit.mybatis.sqlsession.SqlSessionUtils.getSqlSession;
+import static cn.pomit.mybatis.sqlsession.SqlSessionUtils.getTransactionHolder;
 import static java.lang.reflect.Proxy.newProxyInstance;
 import static org.apache.ibatis.reflection.ExceptionUtil.unwrapThrowable;
 
@@ -13,8 +12,6 @@ import java.util.Map;
 
 import org.apache.ibatis.cursor.Cursor;
 import org.apache.ibatis.executor.BatchResult;
-import org.apache.ibatis.logging.Log;
-import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.ResultHandler;
@@ -22,10 +19,9 @@ import org.apache.ibatis.session.RowBounds;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 
-import cn.pomit.mybatis.transaction.TransactionHolder;
+import cn.pomit.mybatis.transaction.AbstractTransactionHolder;
 
 public class SqlSessionTemplate implements SqlSession {
-	private static final Log LOGGER = LogFactory.getLog(SqlSessionTemplate.class);
 	private final SqlSessionFactory sqlSessionFactory;
 
 	private final ExecutorType executorType;
@@ -320,29 +316,18 @@ public class SqlSessionTemplate implements SqlSession {
 	private class SqlSessionInterceptor implements InvocationHandler {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-			LOGGER.debug("Creating a new SqlSession");
-			TransactionHolder transactionHolder = getSqlSession(SqlSessionTemplate.this.sqlSessionFactory,
-					SqlSessionTemplate.this.executorType);
-			SqlSession sqlSession = transactionHolder.getSession();
+			AbstractTransactionHolder transactionHolder = getTransactionHolder(
+					SqlSessionTemplate.this.sqlSessionFactory, SqlSessionTemplate.this.executorType);
+			SqlSession sqlSession = transactionHolder.getSqlSession();
 			try {
 				Object result = method.invoke(sqlSession, args);
-				if (!transactionHolder.isHasTransaction()) {
-					sqlSession.commit(true);
-					LOGGER.debug("Commit a SqlSession");
-				}
+				transactionHolder.commitSqlSession();
 				return result;
 			} catch (Throwable t) {
 				Throwable unwrapped = unwrapThrowable(t);
-				if (!transactionHolder.isHasTransaction()){
-					closeSqlSession(transactionHolder, SqlSessionTemplate.this.sqlSessionFactory);
-					LOGGER.debug("exception! Closing the SqlSession");
-				}
 				throw unwrapped;
 			} finally {
-				if (!transactionHolder.isHasTransaction() && sqlSession != null) {
-					closeSqlSession(transactionHolder, SqlSessionTemplate.this.sqlSessionFactory);
-					LOGGER.debug("Close the SqlSession");
-				}
+				transactionHolder.closeSqlSession();
 			}
 		}
 	}

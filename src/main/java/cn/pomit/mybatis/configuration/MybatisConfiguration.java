@@ -14,16 +14,6 @@ import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 public class MybatisConfiguration {
 
 	private static SqlSessionFactory sqlSessionFactory = null;
-	
-	public MybatisConfiguration(String packageName, Properties properties){
-		MybatisProperties mybatisProperties = new MybatisProperties(packageName, properties);
-		initConfiguration(mybatisProperties);
-	}
-	
-	public MybatisConfiguration(Properties properties){
-		MybatisProperties mybatisProperties = new MybatisProperties(properties);
-		initConfiguration(mybatisProperties);
-	}
 
 	public static void initConfiguration(Properties properties) {
 		MybatisProperties mybatisProperties = new MybatisProperties(properties);
