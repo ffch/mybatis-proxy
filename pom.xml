@@ -34,9 +34,9 @@
 
 	<scm>
 		<tag>master</tag>
-		<url>git@github.com:ffch/consul-proxy.git</url>
-		<connection>scm:git:git@github.com:ffch/consul-proxy.git</connection>
-		<developerConnection>scm:git:git@github.com:ffch/consul-proxy.git</developerConnection>
+		<url>git@github.com:ffch/mybatis-proxy.git</url>
+		<connection>scm:git:git@github.com:ffch/mybatis-proxy.git</connection>
+		<developerConnection>scm:git:git@github.com:ffch/mybatis-proxy.git</developerConnection>
 	</scm>
 	<distributionManagement>
 		<snapshotRepository>
