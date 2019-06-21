@@ -6,7 +6,7 @@
 
 	<groupId>cn.pomit</groupId>
 	<artifactId>mybatis-proxy</artifactId>
-	<version>1.0</version>
+	<version>1.1</version>
 	<name>mybatis-proxy</name>
 	<description>easily use mybatis on non-spring project</description>
 	<url>http://maven.apache.org</url>

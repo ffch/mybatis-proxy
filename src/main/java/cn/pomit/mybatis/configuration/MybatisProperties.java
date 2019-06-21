@@ -58,7 +58,7 @@ public class MybatisProperties {
 			if (StringUtil.isEmpty(name)) {
 				throw new ParamsNeedException("配置文件未获取到mybatis.mapper.scan参数！");
 			}
-			this.packageName = packageName;
+			this.packageName = name;
 		}
 
 		if (dataSource == null) {
