@@ -210,10 +210,15 @@ public class AlarmApp {
 mybatis.configuration=cn.pomit.mybatis.configuration.MybatisConfiguration
 ```
 
-## Demo项目
+## 结合consul-proxy的Demo项目
 
 ## [Gitee-Consul-proxy-test](https://gitee.com/ffch/consul-proxy-test)
 ## [Github-Consul-proxy-test](https://github.com/ffch/consul-proxy-test)
+
+## Mybatis-proxy的Demo项目
+
+## [Gitee-Mybatis-proxy-test](https://gitee.com/ffch/mybatis-proxy-test)
+## [Github-Mybatis-proxy-test](https://github.com/ffch/mybatis-proxy-test)
 
 ## 版权声明
 mybatis-proxy使用 Apache License 2.0 协议.
